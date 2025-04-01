@@ -1,15 +1,11 @@
 name: Release Windows
 on:
-  push:
-    branches:
-      - release
-      - pre-release
-  pull_request:
-    branches:
-      - release
-      - pre-release
-#    tags:
-#      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      name:
+        description: 'release'
+        required: true
+        default: 'World'
 
 env:
   go-version: '1.20.0'
@@ -178,15 +174,6 @@ jobs:
           7z a -t7z -mx=9 ${env:RELEASE_PKG_X86} ${env:PUBLISH_PATH_X86}/*
           ls $env:RELEASE_PATH
 
-      # 生成Release Hash
-      - name: Hash Releases ⌨
-        if: success()
-        shell: pwsh
-        run: |
-          echo (Get-FileHash ${env:RELEASE_PKG_X64} -Algorithm SHA256).Hash > "${env:RELEASE_PKG_X64}.sha256"
-          echo (Get-FileHash ${env:RELEASE_PKG_X86} -Algorithm SHA256).Hash > "${env:RELEASE_PKG_X86}.sha256"
-          ls $env:RELEASE_PATH
-
       # 发布到Releases
       - name: Publish to Releases 💸
         if: success()
@@ -196,73 +183,3 @@ jobs:
           tag_name: ${{ env.GIT_TAG }}
           files: ${{ env.PUBLISH_PATH }}/*.7z
           generate_release_notes: true
-
-#  notifaction:
-#    name: Notification
-#    environment: (Pre)Release
-#    runs-on: ubuntu-latest
-#    needs: build-release-windows
-#    env:
-#      TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
-#      CHAT_ID: ${{ secrets.CHAT_ID }}
-#      UPLOAD_CHAT_ID: ${{ secrets.UPLOAD_CHAT_ID }}
-#      GIT_TAG: ${{ needs.build-release-windows.outputs.git-tag }}
-#      RELEASE_PKG_X64: ${{ needs.build-release-windows.outputs.release-pkg-x64 }}
-#      RELEASE_PKG_X86: ${{ needs.build-release-windows.outputs.release-pkg-x86 }}
-#    steps:
-#      # 拉取项目代码
-#      - name: Checkout 🔀
-#        uses: actions/checkout@v2
-#        with:
-#          persist-credentials: false
-#          fetch-depth: 1
-
-      # 推送发行公告到TG
-#      - id: push-broadcast-to-tg
-#        name: Push Broadcast to TG 📰
-#        if: ${{ success() && !contains(github.event.head_commit.message, '[Skip Push]') }}
-#        shell: bash
-#        run: bash ./.github/scripts/steps/notification/1_push_broadcast_tg.sh
-#
-#      # 推送文件到TG
-#      - name: Push Files to TG 📰
-#        if: ${{ success() && contains(github.event.head_commit.message, '[Push Upload]') }}
-#        shell: bash
-#        run: bash ./.github/scripts/steps/notification/2_push_files_tg.sh
-#        env:
-#          PUSH_MSG_ID: ${{ steps.push-broadcast-to-tg.outputs.push-msg-id }}
-
-#      # 缓存Build文件
-#      - name: Cache node modules
-#        uses: actions/cache@v2
-#        env:
-#          cache-name: cache-build-release
-#        with:
-#          path: ${{ env.PUBLISH_PATH }}
-#          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-#          restore-keys: |
-#            ${{ runner.os }}-build-${{ env.cache-name }}-
-#            ${{ runner.os }}-build-
-#            ${{ runner.os }}-
-#
-#  notifaction:
-#    name: Notification
-#    runs-on: ubuntu-latest
-#    needs: build-release-windows
-#    steps:
-#      - name: Download Release 📦
-#        uses: Legion2/download-release-action@v2.1.0
-#        with:
-#          repository: JyCyunMe/Clash.Mini
-#          tag: ${{ jobs.build-release-windows.env.GIT_TAG }}
-#          path: ./release
-#          token: ${{ secrets.ACTION_ACCESS_TOKEN }}
-#
-#      - name: Send to TG 💡
-#        uses: appleboy/telegram-action@master
-#        with:
-#          to: JyCyun
-#          token: ${{ secrets.TG_BOT_TOKEN }}
-#          message: "test release \nSee full in https://github.com/JyCyunMe/Clash.Mini/releases/tag/${{ env.GIT_TAG }}"
-#          disable_web_page_preview: true
-#          document: ./release/Clash.Mini*
