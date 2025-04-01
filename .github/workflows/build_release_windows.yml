@@ -2,10 +2,12 @@ name: Release Windows
 on:
   workflow_dispatch:
     inputs:
-      name:
-        description: 'release'
+      environment:
+        description: "Deploy environment (e.g., prod, staging)"
         required: true
-        default: 'World'
+        default: "prod"
+    branches:
+      - release  # 仅允许在 release 分支手动触发
 
 env:
   go-version: '1.20.0'
